@@ -1,0 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Sans:wght@300;400;500;600&display=swap");
+:root { --bg:#080C10;--bg2:#0D1218;--bg3:#141B24;--surface:#1A2332;--border:#1F2D3D;--gold:#F5C842;--gold2:#E6A817;--red:#FF4757;--green:#2ED573;--blue:#1E90FF;--text:#E8EDF3;--muted:#6B7A8D;--radius:14px;--radius-sm:8px; }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:"DM Sans",sans-serif;font-size:16px;line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:"Syne",sans-serif}
+button{cursor:pointer;font-family:inherit}
+input,select,textarea{font-family:inherit}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+@keyframes pulse-ring{0%{transform:scale(0.9);opacity:1}100%{transform:scale(1.4);opacity:0}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes giftPop{0%{transform:scale(0) rotate(-20deg);opacity:0}60%{transform:scale(1.2) rotate(5deg);opacity:1}100%{transform:scale(1) rotate(0deg)}}
+@keyframes dot{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
