@@ -301,3 +301,4 @@ function CtrlBtn({ onClick, label, active }) {
 }
 
 const iconBtn = { background: "none", border: "none", color: "var(--text)", fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", padding: 6, cursor: "pointer" };
+
