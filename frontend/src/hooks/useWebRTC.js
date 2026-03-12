@@ -18,6 +18,7 @@ export function useWebRTC(socket, roomIdRef) {
   const [mediaError, setMediaError] = useState(null);
 
   const startMedia = useCallback(async (video = true, audio = true) => {
+    // Return existing stream if already started
     if (localStreamRef.current) return localStreamRef.current;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -39,9 +40,7 @@ export function useWebRTC(socket, roomIdRef) {
     peerRef.current = peer;
 
     stream?.getTracks().forEach(track => peer.addTrack(track, stream));
-
     peer.ontrack = (e) => setRemoteStream(e.streams[0]);
-
     peer.onicecandidate = (e) => {
       if (e.candidate && socket && roomIdRef.current) {
         socket.emit('webrtc_ice', { roomId: roomIdRef.current, candidate: e.candidate });
@@ -49,12 +48,12 @@ export function useWebRTC(socket, roomIdRef) {
     };
 
     if (isInitiator) {
-      peer.createOffer().then(offer => {
-        peer.setLocalDescription(offer);
-        socket?.emit('webrtc_offer', { roomId: roomIdRef.current, offer });
-      });
+      peer.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true })
+        .then(offer => {
+          peer.setLocalDescription(offer);
+          socket?.emit('webrtc_offer', { roomId: roomIdRef.current, offer });
+        });
     }
-
     return peer;
   }, [socket, roomIdRef]);
 
@@ -65,9 +64,7 @@ export function useWebRTC(socket, roomIdRef) {
 
     const s = stream || localStreamRef.current;
     s?.getTracks().forEach(track => peer.addTrack(track, s));
-
     peer.ontrack = (e) => setRemoteStream(e.streams[0]);
-
     peer.onicecandidate = (e) => {
       if (e.candidate && socket && roomIdRef.current) {
         socket.emit('webrtc_ice', { roomId: roomIdRef.current, candidate: e.candidate });

@@ -64,8 +64,9 @@ export default function Chat() {
       addSystemMessage('Connected! Say hello 👋');
 
       if (chatMode !== 'text') {
-        try {
-          const stream = await startMedia(chatMode === 'video', true);
+      try {
+        const isVideo = chatMode === 'video';
+        const stream = await startMedia(isVideo, true);
           if (!stream) {
             addSystemMessage('⚠️ Could not access camera/mic. Check browser permissions.');
             return;
