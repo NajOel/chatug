@@ -207,7 +207,7 @@ export default function Chat() {
 
       {/* Video area */}
       {isVideo && (
-        <div style={{ position: "relative", background: "#000", flexShrink: 0, height: "min(220px, 35vh)" }}>
+        <div style={{ position: "relative", background: "#000", flexShrink: 0, height: 220 }}>
           <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: remoteStream ? 'block' : 'none' }} />
           {!remoteStream && (
             <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
@@ -332,4 +332,5 @@ function CtrlBtn({ onClick, label, active }) {
 }
 
 const iconBtn = { background: 'none', border: 'none', color: 'var(--text)', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, cursor: 'pointer' };
+
 
