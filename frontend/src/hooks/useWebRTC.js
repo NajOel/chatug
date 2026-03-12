@@ -1,5 +1,5 @@
 import{useRef,useState,useCallback}from"react";
-const ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]};
+const ICE={iceServers:[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"},{urls:"turn:openrelay.metered.ca:80",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443",username:"openrelayproject",credential:"openrelayproject"},{urls:"turn:openrelay.metered.ca:443?transport=tcp",username:"openrelayproject",credential:"openrelayproject"}]};
 export function useWebRTC(socket,roomId){
 const peerRef=useRef(null);const localStreamRef=useRef(null);
 const[localStream,setLocalStream]=useState(null);const[remoteStream,setRemoteStream]=useState(null);const[mediaError,setMediaError]=useState(null);
