@@ -208,80 +208,8 @@ export default function Chat() {
       {/* Video area */}
       {isVideo && (
         <div style={{ position: "relative", background: "#000", flexShrink: 0, height: 220 }}>
-          <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: remoteStream ? 'block' : 'none' }} />
-          {!remoteStream && (
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>
-              {status === 'waiting' ? <WaitingSpinner /> : <span style={{ fontSize: 13 }}>Waiting for partner's video…</span>}
-            </div>
-          )}
-          <div style={{ position: 'absolute', bottom: 12, right: 12, width: 80, height: 100, borderRadius: 10, overflow: 'hidden', border: '2px solid var(--border)', background: '#111' }}>
-            <video ref={localVideoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)' }} />
-          </div>
-        </div>
-      )}
-
-      {/* Voice indicator */}
-      {isVoice && (
-        <div style={{ flexShrink: 0, padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 48 }}>{status === 'connected' ? '🎙️' : '⏳'}</div>
-          <div style={{ fontSize: 13, color: 'var(--muted)' }}>{status === 'connected' ? 'Voice call active' : 'Waiting…'}</div>
-          <button onClick={toggleMute} style={{ padding: '8px 20px', borderRadius: 20, border: 'none', background: muted ? 'var(--red)' : 'var(--surface)', color: 'var(--text)', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
-            {muted ? '🔇 Unmute' : '🔊 Mute'}
-          </button>
-        </div>
-      )}
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {status === 'waiting' && messages.length === 0 && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, color: 'var(--muted)' }}>
-            <WaitingSpinner />
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: 'Syne', fontWeight: 700, fontSize: 18, color: 'var(--text)', marginBottom: 6 }}>Finding your match…</div>
-              <div style={{ fontSize: 13 }}>Matching by {profile?.language}, {profile?.interests?.slice(0,2).join(', ') || 'any interests'}</div>
-              {waitingPos && <div style={{ fontSize: 12, marginTop: 6, color: 'var(--gold)' }}>{waitingPos} in queue</div>}
-            </div>
-          </div>
-        )}
-        {messages.map((msg, i) => <Message key={i} msg={msg} />)}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Video controls */}
-      {isVideo && status === 'connected' && (
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: '8px 16px', flexShrink: 0 }}>
-          <CtrlBtn onClick={toggleMute} label={muted ? '🔇' : '🔊'} active={muted} />
-          <CtrlBtn onClick={toggleVideo} label={videoOff ? '📵' : '📹'} active={videoOff} />
-        </div>
-      )}
-
-      {/* Input bar */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg2)', display: 'flex', gap: 8, flexShrink: 0, paddingBottom: 'max(10px, env(safe-area-inset-bottom))' }}>
-        <button onClick={() => setShowGifts(g => !g)} style={{ ...iconBtn, fontSize: 20, width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--border)' }}>🎁</button>
-        <input
-          value={inputText}
-          onChange={e => setInputText(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(e)}
-          placeholder={status === 'connected' ? 'Type a message…' : 'Waiting for match…'}
-          disabled={status !== 'connected'}
-          style={{ flex: 1, padding: '10px 14px', borderRadius: 12, background: 'var(--surface)', border: '1.5px solid var(--border)', color: 'var(--text)', fontSize: 15, outline: 'none' }}
-        />
-        <button onClick={sendMessage} disabled={!inputText.trim() || status !== 'connected'} style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'var(--gold)', border: 'none', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: !inputText.trim() || status !== 'connected' ? 0.4 : 1, cursor: 'pointer' }}>➤</button>
-        <button onClick={skip} style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, background: 'rgba(30,144,255,0.1)', border: '1.5px solid rgba(30,144,255,0.4)', color: 'var(--blue)', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, cursor: 'pointer' }}>⏭</button>
-      </div>
-
-      {/* Gift panel */}
-      {showGifts && (
-        <div style={{ position: 'absolute', bottom: 80, left: 12, right: 12, background: 'var(--surface)', borderRadius: 16, border: '1px solid var(--border)', padding: 16, zIndex: 50, animation: 'slideUp 0.2s ease' }}>
-          <div style={{ fontFamily: 'Syne', fontWeight: 700, marginBottom: 12, fontSize: 14 }}>Send a Gift</div>
-          <div style={{ display: 'flex', gap: 10 }}>
-            {GIFTS.map(g => (
-              <button key={g.id} onClick={() => sendGift(g.id)} style={{ flex: 1, padding: '14px 8px', borderRadius: 12, background: 'var(--bg3)', border: '1.5px solid var(--border)', cursor: 'pointer', textAlign: 'center' }}>
-                <div style={{ fontSize: 28 }}>{g.emoji}</div>
-                <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 600, marginTop: 4 }}>{g.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--gold)', marginTop: 2 }}>{g.price.toLocaleString()} UGX</div>
-              </button>
-            ))}
+          <video ref={remoteVideoRef} autoPlay playsInline style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          
           </div>
           <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 10, textAlign: 'center' }}>Pay via MTN MoMo or Airtel Money</div>
         </div>
@@ -332,5 +260,7 @@ function CtrlBtn({ onClick, label, active }) {
 }
 
 const iconBtn = { background: 'none', border: 'none', color: 'var(--text)', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6, cursor: 'pointer' };
+
+
 
 
