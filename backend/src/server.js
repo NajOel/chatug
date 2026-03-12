@@ -13,16 +13,16 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: '*',
     methods: ['GET', 'POST'],
   },
   pingTimeout: 60000,
   pingInterval: 25000,
 });
 
-app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:3000' }));
 app.set('trust proxy', 1);
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
@@ -30,14 +30,12 @@ app.use('/api', limiter);
 
 const filter = new Filter();
 
-// ─── In-Memory State ──────────────────────────────────────────────────────────
-const waitingUsers = [];      // queue of users waiting to be matched
-const activeRooms = {};       // roomId -> { users: [socketId, socketId], ... }
-const userProfiles = {};      // socketId -> profile object
-const reportedUsers = {};     // socketId -> count
+const waitingUsers = [];
+const activeRooms = {};
+const userProfiles = {};
+const reportedUsers = {};
 const bannedSockets = new Set();
 
-// ─── Matching Algorithm ───────────────────────────────────────────────────────
 function scoreMatch(a, b) {
   let score = 0;
   if (a.language === b.language) score += 40;
@@ -50,27 +48,20 @@ function scoreMatch(a, b) {
 
 function findBestMatch(profile, queue) {
   if (queue.length === 0) return null;
-
-  // Filter out users they've already talked to
   const candidates = queue.filter(u =>
     u.socketId !== profile.socketId &&
     !(profile.skipList || []).includes(u.socketId)
   );
-
   if (candidates.length === 0) return queue[0] || null;
-
   let best = candidates[0];
   let bestScore = scoreMatch(profile, candidates[0]);
-
   for (const candidate of candidates) {
     const s = scoreMatch(profile, candidate);
     if (s > bestScore) { bestScore = s; best = candidate; }
   }
-
   return best;
 }
 
-// ─── Profanity & Moderation ───────────────────────────────────────────────────
 function moderateMessage(text) {
   try { return filter.clean(text); } catch { return text; }
 }
@@ -84,7 +75,6 @@ function checkAbuse(socketId) {
   return false;
 }
 
-// ─── Socket.IO Logic ──────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   if (bannedSockets.has(socket.id)) {
     socket.emit('banned', { message: 'You have been banned due to multiple reports.' });
@@ -113,16 +103,13 @@ io.on('connection', (socket) => {
     const profile = userProfiles[socket.id];
     if (!profile) return socket.emit('error', { message: 'Set profile first' });
 
-    // Remove from any existing room
     leaveCurrentRoom(socket);
 
-    // Check if already waiting
     const alreadyWaiting = waitingUsers.find(u => u.socketId === socket.id);
     if (!alreadyWaiting) {
       const match = findBestMatch(profile, waitingUsers);
 
       if (match) {
-        // Remove match from queue
         const idx = waitingUsers.findIndex(u => u.socketId === match.socketId);
         if (idx !== -1) waitingUsers.splice(idx, 1);
 
@@ -138,11 +125,22 @@ io.on('connection', (socket) => {
         userProfiles[socket.id].currentRoom = roomId;
         userProfiles[match.socketId].currentRoom = roomId;
 
-        io.to(roomId).emit('match_found', {
+        // Tell the first user (socket) to be the initiator
+        socket.emit('match_found', {
           roomId,
+          isInitiator: true,
           partnerLanguage: match.language,
           partnerInterests: match.interests,
           partnerUniversity: match.university,
+        });
+
+        // Tell the second user (match) to wait for the offer
+        io.sockets.sockets.get(match.socketId)?.emit('match_found', {
+          roomId,
+          isInitiator: false,
+          partnerLanguage: profile.language,
+          partnerInterests: profile.interests,
+          partnerUniversity: profile.university,
         });
 
         console.log(`[~] Room created: ${roomId}`);
@@ -166,7 +164,6 @@ io.on('connection', (socket) => {
   socket.on('skip', () => {
     const profile = userProfiles[socket.id];
     if (!profile) return;
-
     const roomId = profile.currentRoom;
     if (roomId && activeRooms[roomId]) {
       const partner = activeRooms[roomId].users.find(id => id !== socket.id);
@@ -176,7 +173,6 @@ io.on('connection', (socket) => {
       }
       leaveCurrentRoom(socket);
     }
-    // Auto re-queue
     socket.emit('waiting', { position: waitingUsers.length + 1 });
     waitingUsers.push(profile);
   });
@@ -197,16 +193,16 @@ io.on('connection', (socket) => {
 
   socket.on('send_gift', ({ roomId, gift }) => {
     const gifts = {
-      rose:   { emoji: '🌹', name: 'Rose',  price: 1000 },
-      fire:   { emoji: '🔥', name: 'Fire',  price: 2000 },
-      crown:  { emoji: '👑', name: 'Crown', price: 5000 },
+      rose:  { emoji: '🌹', name: 'Rose',  price: 1000 },
+      fire:  { emoji: '🔥', name: 'Fire',  price: 2000 },
+      crown: { emoji: '👑', name: 'Crown', price: 5000 },
     };
     const g = gifts[gift];
     if (!g) return;
     socket.to(roomId).emit('receive_gift', { ...g, from: socket.id });
   });
 
-  // ── WebRTC Signaling ──
+  // WebRTC Signaling
   socket.on('webrtc_offer', ({ roomId, offer }) => {
     socket.to(roomId).emit('webrtc_offer', { offer, from: socket.id });
   });
@@ -240,7 +236,6 @@ io.on('connection', (socket) => {
   }
 });
 
-// ─── REST Endpoints ───────────────────────────────────────────────────────────
 app.get('/api/stats', (_, res) => {
   res.json({
     online: Object.keys(userProfiles).length,
@@ -250,12 +245,10 @@ app.get('/api/stats', (_, res) => {
 });
 
 app.post('/api/payment/initiate', (req, res) => {
-  // Stub – integrate MTN MoMo / Airtel Money SDKs here
   const { phone, amount, network, purpose } = req.body;
   console.log(`Payment request: ${network} ${phone} UGX ${amount} for ${purpose}`);
   res.json({ status: 'pending', transactionId: uuidv4(), message: 'Payment initiated (sandbox)' });
 });
 
-// ─── Start ────────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`🚀 ChatUG Backend running on port ${PORT}`));
