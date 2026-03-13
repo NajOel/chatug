@@ -114,6 +114,10 @@ io.on('connection', (socket) => {
         if (idx !== -1) waitingUsers.splice(idx, 1);
 
         const roomId = uuidv4();
+        if (!userProfiles[socket.id] || !userProfiles[match.socketId]) {
+          waitingUsers.push(profile);
+          return;
+        }
         activeRooms[roomId] = {
           users: [socket.id, match.socketId],
           createdAt: Date.now(),
