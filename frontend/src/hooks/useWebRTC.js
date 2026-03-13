@@ -40,7 +40,11 @@ export function useWebRTC(socket, roomIdRef) {
     peerRef.current = peer;
 
     // attach local tracks
-    stream?.getTracks().forEach(track => peer.addTrack(track, stream));
+    stream?.getTracks().forEach(track => {
+      console.debug('[webrtc] adding local track', track.kind, 'enabled=', track.enabled);
+      peer.addTrack(track, stream);
+    });
+    try { console.debug('[webrtc] senders', peer.getSenders().map(s => s.track?.kind)); } catch {}
 
     peer.ontrack = (e) => {
       console.debug('[webrtc] ontrack', e.streams[0]?.getTracks().map(t=>t.kind));
@@ -84,7 +88,11 @@ export function useWebRTC(socket, roomIdRef) {
       await peer.setRemoteDescription(new RTCSessionDescription(offer));
 
       const s = stream || localStreamRef.current;
-      s?.getTracks().forEach(track => peer.addTrack(track, s));
+      s?.getTracks().forEach(track => {
+        console.debug('[webrtc] adding local track (answerer)', track.kind, 'enabled=', track.enabled);
+        peer.addTrack(track, s);
+      });
+      try { console.debug('[webrtc] senders (answerer)', peer.getSenders().map(s => s.track?.kind)); } catch {}
 
       const answer = await peer.createAnswer();
       await peer.setLocalDescription(answer);
